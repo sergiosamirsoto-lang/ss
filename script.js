@@ -277,7 +277,7 @@ function drawBackground() {
 function startRound() {
   p1.reset(200, 1); p2.reset(700, -1);
   timer = 99; particles = [];
-  state = 'countdown'; stateTimer = 100;
+  state = 'countdown'; stateTimer = 90;
   hideMessage();
   roundTextEl.textContent = 'ROUND ' + round;
   updateUI();
@@ -300,16 +300,14 @@ function endRound(winner) {
   updateUI();
 }
 
-let countdownText = '';
-
 function gameLoop() {
   if (state === 'countdown') {
     p1.update(); p2.update(); pushApart();
     stateTimer--;
-    const t = Math.ceil(stateTimer / 25);
-    const texts = ['3', '2', '1', 'FIGHT!'];
-    countdownText = texts[Math.min(3, 3 - t)] || 'FIGHT!';
-    if (stateTimer <= 0) { state = 'fighting'; hideMessage(); }
+    const sec = Math.ceil(stateTimer / 30);
+    const cdTexts = ['FIGHT!', '1', '2', '3'];
+    const countdownText = cdTexts[Math.min(3, sec)];
+    if (stateTimer <= 0) { state = 'fighting'; }
   }
 
   if (state === 'fighting') {
@@ -369,11 +367,14 @@ function gameLoop() {
   updateParticles(); drawParticles();
 
   if (state === 'countdown') {
-    ctx.fillStyle = '#ffcc00';
+    const sec = Math.ceil(stateTimer / 30);
+    const cdTexts = ['FIGHT!', '1', '2', '3'];
+    const txt = cdTexts[Math.min(3, sec)];
+    ctx.fillStyle = txt === 'FIGHT!' ? '#ff4400' : '#ffcc00';
     ctx.font = '100px "Passion One", sans-serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.shadowColor = 'rgba(255, 0, 0, 0.6)'; ctx.shadowBlur = 40;
-    ctx.fillText(countdownText, W / 2, H / 2 - 20);
+    ctx.fillText(txt, W / 2, H / 2 - 20);
     ctx.shadowBlur = 0;
   }
 
@@ -395,4 +396,4 @@ function restartGame() {
   hideMessage(); startRound();
 }
 
-startRound();
+startRound(); gameLoop();
