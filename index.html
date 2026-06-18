@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mortal Kombat Chino</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="game-container">
+  <div id="hud">
+    <div id="p1-info">
+      <div id="p1-name">SCORPION</div>
+      <div id="p1-health-bg">
+        <div id="p1-health"></div>
+      </div>
+    </div>
+    <div id="round-info">
+      <div id="timer">99</div>
+      <div id="round-text">ROUND 1</div>
+      <div id="score">0 - 0</div>
+    </div>
+    <div id="p2-info">
+      <div id="p2-health-bg">
+        <div id="p2-health"></div>
+      </div>
+      <div id="p2-name">SUB-ZERO</div>
+    </div>
+  </div>
+
+  <canvas id="gameCanvas" width="900" height="500"></canvas>
+
+  <div id="controls">
+    <div class="controls-left">
+      <strong>SCORPION</strong><br>
+      <span>A/D</span> Moverse &nbsp; <span>W</span> Saltar<br>
+      <span>J</span> Puño &nbsp; <span>K</span> Patada &nbsp; <span>L</span> Lanza &nbsp; <span>S</span> Bloquear
+    </div>
+    <div class="controls-right">
+      <strong>SUB-ZERO</strong><br>
+      <span>&larr;/&rarr;</span> Moverse &nbsp; <span>&uarr;</span> Saltar<br>
+      <span>1</span> Puño &nbsp; <span>2</span> Patada &nbsp; <span>3</span> Hielo &nbsp; <span>&darr;</span> Bloquear
+    </div>
+  </div>
+
+  <div id="message-overlay" class="hidden">
+    <div id="message-content">
+      <h1 id="message-title">FIGHT!</h1>
+      <p id="message-sub"></p>
+      <button id="restart-btn">REINICIAR</button>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
