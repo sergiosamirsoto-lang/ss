@@ -7,51 +7,112 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="game-container">
-  <div id="hud">
-    <div id="p1-info">
-      <div id="p1-name">SCORPION</div>
-      <div id="p1-health-bg">
-        <div id="p1-health"></div>
+<div id="app">
+  <!-- MENU -->
+  <div id="menu-screen" class="screen">
+    <div id="title">MORTAL KOMBAT</div>
+    <div id="subtitle">CHINO</div>
+    <div id="menu-options">
+      <div class="menu-item selected" data-action="1p">1 JUGADOR</div>
+      <div class="menu-item" data-action="2p">2 JUGADORES</div>
+      <div class="menu-item" data-action="multi">MULTIJUGADOR</div>
+      <div class="menu-item" data-action="controls">CONTROLES</div>
+    </div>
+    <div id="menu-hint">FLECHAS / WASD para mover · ENTER para confirmar</div>
+    <div id="loading-text">Cargando sprites...</div>
+  </div>
+
+  <!-- MATCHMAKING SCREEN -->
+  <div id="matchmaking-screen" class="screen hidden" style="text-align: center; padding-top: 200px;">
+    <h2>BUSCANDO JUGADOR...</h2>
+    <div id="cancel-match-btn" class="menu-item" style="margin-top: 50px;">CANCELAR</div>
+  </div>
+
+  <!-- CONTROLS SCREEN -->
+  <div id="controls-screen" class="screen hidden">
+    <h2>CONTROLES</h2>
+    <div class="controls-grid">
+      <div>
+        <h3>JUGADOR 1</h3>
+        <p><span>W</span> Arriba (U)</p>
+        <p><span>S</span> Abajo (D)</p>
+        <p><span>A</span> Atrás (B)</p>
+        <p><span>D</span> Adelante (F)</p>
+        <p><span>J</span> Puño Bajo (LP)</p>
+        <p><span>U</span> Puño Alto (HP)</p>
+        <p><span>K</span> Patada Baja (LK)</p>
+        <p><span>I</span> Patada Alta (HK)</p>
+        <p><span>Espacio</span> Bloqueo (BL)</p>
+        <p><span>Enter</span> Start</p>
+      </div>
+      <div>
+        <h3>JUGADOR 2</h3>
+        <p><span>↑</span> Arriba (U)</p>
+        <p><span>↓</span> Abajo (D)</p>
+        <p><span>←</span> Atrás (B)</p>
+        <p><span>→</span> Adelante (F)</p>
+        <p><span>1</span> Puño Bajo (LP)</p>
+        <p><span>2</span> Puño Alto (HP)</p>
+        <p><span>3</span> Patada Baja (LK)</p>
+        <p><span>4</span> Patada Alta (HK)</p>
+        <p><span>5</span> Bloqueo (BL)</p>
+        <p><span>Enter</span> Start</p>
       </div>
     </div>
-    <div id="round-info">
-      <div id="timer">99</div>
-      <div id="round-text">ROUND 1</div>
-      <div id="score">0 - 0</div>
+    <div id="controls-back" class="menu-item">VOLVER</div>
+  </div>
+
+  <!-- CHARACTER SELECT -->
+  <div id="select-screen" class="screen hidden">
+    <div id="select-header">
+      <div id="select-p1">J1: <span id="p1-char-name">???</span></div>
+      <div id="select-title">SELECCIONA PERSONAJE</div>
+      <div id="select-p2">J2: <span id="p2-char-name">???</span></div>
     </div>
-    <div id="p2-info">
-      <div id="p2-health-bg">
-        <div id="p2-health"></div>
-      </div>
-      <div id="p2-name">SUB-ZERO</div>
+    <canvas id="select-canvas" width="960" height="420"></canvas>
+    <div id="select-hud">
+      <span>P1: WASD + J</span>
+      <span>P2: FLECHAS + 1 · ENTER pelear</span>
     </div>
   </div>
 
-  <canvas id="gameCanvas" width="900" height="500"></canvas>
-
-  <div id="controls">
-    <div class="controls-left">
-      <strong>SCORPION</strong><br>
-      <span>A/D</span> Moverse &nbsp; <span>W</span> Saltar<br>
-      <span>J</span> Puño &nbsp; <span>K</span> Patada &nbsp; <span>L</span> Lanza &nbsp; <span>S</span> Bloquear
-    </div>
-    <div class="controls-right">
-      <strong>SUB-ZERO</strong><br>
-      <span>&larr;/&rarr;</span> Moverse &nbsp; <span>&uarr;</span> Saltar<br>
-      <span>1</span> Puño &nbsp; <span>2</span> Patada &nbsp; <span>3</span> Hielo &nbsp; <span>&darr;</span> Bloquear
+  <!-- GAME HUD -->
+  <div id="game-hud" class="hidden">
+    <div id="hud-top">
+      <div class="p-sec">
+        <div class="p-name" id="hud-p1-name">CATRACHO</div>
+        <div class="hp-bg"><div class="hp-fill" id="hud-p1-hp"></div><div class="hp-dmg" id="hud-p1-dmg"></div></div>
+        <div class="meter-bg"><div class="meter-fill" id="hud-p1-meter"></div></div>
+      </div>
+      <div class="mid-sec">
+        <div id="hud-timer">99</div>
+        <div id="hud-round">ROUND 1</div>
+        <div id="hud-score">0-0</div>
+      </div>
+      <div class="p-sec right">
+        <div class="p-name" id="hud-p2-name">PIJUDO</div>
+        <div class="hp-bg"><div class="hp-fill" id="hud-p2-hp"></div><div class="hp-dmg" id="hud-p2-dmg"></div></div>
+        <div class="meter-bg"><div class="meter-fill" id="hud-p2-meter"></div></div>
+      </div>
     </div>
   </div>
 
-  <div id="message-overlay" class="hidden">
-    <div id="message-content">
-      <h1 id="message-title">FIGHT!</h1>
-      <p id="message-sub"></p>
+  <canvas id="gc" width="960" height="540"></canvas>
+
+  <div id="combo-display">
+    <span id="combo-text"></span>
+  </div>
+
+  <div id="msg-overlay" class="hidden">
+    <div id="msg-box">
+      <h1 id="msg-title">FIGHT!</h1>
+      <p id="msg-sub"></p>
       <button id="restart-btn">REINICIAR</button>
+      <button id="menu-btn">MENÚ</button>
     </div>
   </div>
 </div>
-
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="script.js"></script>
 </body>
 </html>
