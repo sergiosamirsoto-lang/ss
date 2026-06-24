@@ -10,7 +10,8 @@ let waitingPlayer = null;
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
-  socket.on('join_matchmaking', () => {
+  socket.on('join_matchmaking', (data) => {
+    socket.playerName = data?.name || 'Jugador';
     if (waitingPlayer && waitingPlayer !== socket) {
       const p1 = waitingPlayer;
       const p2 = socket;
@@ -20,8 +21,8 @@ io.on('connection', (socket) => {
       p1.join(room);
       p2.join(room);
 
-      p1.emit('match_found', { role: 'p1' });
-      p2.emit('match_found', { role: 'p2' });
+      p1.emit('match_found', { role: 'p1', opponentName: p2.playerName });
+      p2.emit('match_found', { role: 'p2', opponentName: p1.playerName });
 
       p1.on('game_input', (data) => p2.emit('game_input', data));
       p2.on('game_input', (data) => p1.emit('game_input', data));

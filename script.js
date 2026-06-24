@@ -18,6 +18,7 @@ const rstBtn = $('restart-btn'), menuBtn = $('menu-btn');
 let socket = null;
 let isMultiplayer = false;
 let myRole = null;
+let opponentName = '';
 let finishHimTimer = 0;
 let finishHimState = false;
 function show(s){s.classList.remove('hidden')}
@@ -165,7 +166,7 @@ const CHARS = {
       {inp:['D','B','HP'],name:'El Brinco',dmg:0,desc:'D,B+HP'},
       {inp:['D','F','HP'],name:'El Zape',dmg:0,desc:'D,F+HP'},
       {inp:['F','D','B','LK'],name:'Trancazo',dmg:10,desc:'F,D,B+LK'},
-      {inp:['U','U','HP'],name:'La Cayetana',dmg:50,desc:'U,U+HP (Fatality)'},
+      {inp:['U','U','HP'],name:'La Cayetana',dmg:50,desc:'U,U+HP (Fatality)', fatality: true},
     ]},
   pijudo:{name:'El Pijudo',cs:{torso:'#8b0000',pants:'#3a0000',belt:'#888',skin:'#e8c090',boot:'#223344',gloves:'#4a0000',hair:'#445',headband:false},
     moves:[
@@ -173,12 +174,14 @@ const CHARS = {
       {inp:['D','B','LK'],name:'Agarrón',dmg:8,desc:'D,B+LK'},
       {inp:['B','LK','HK'],name:'Pase Shuco',dmg:9,desc:'B+LK+HK'},
       {inp:['F','F','D','HK'],name:'Golpe Chafa',dmg:14,desc:'F,F,D+HK'},
+      {inp:['F','F','HP'],name:'El Descuartizador',dmg:50,desc:'F,F+HP (Fatality)', fatality: true},
     ]},
   maje:{name:'El Maje',cs:{torso:'#884400',pants:'#442200',belt:'#ff0',skin:'#d4a574',boot:'#221100',gloves:'#884400',hair:'#fff',headband:false},
     moves:[
       {inp:['B','B','F'],name:'El Macanazo',dmg:11,desc:'B,B,F'},
       {inp:['D','F','LP'],name:'Rayo',dmg:9,desc:'D,F+LP'},
       {inp:['D','U'],name:'El Brinco',dmg:0,desc:'D+U'},
+      {inp:['D','D','HK'],name:'La Rompe Madres',dmg:50,desc:'D,D+HK (Fatality)', fatality: true},
     ]},
 };
 const CHAR_IDS = Object.keys(CHARS);
@@ -273,6 +276,7 @@ class Fighter {
     const cd=CHARS[this.id];
     if(!cd||!cd.moves)return false;
     for(const m of cd.moves){
+      if(m.fatality && state !== 'finish_him') continue; // Solo permitir fatalities en estado finish_him
       if(this.inp.match(m.inp)){
         this.state='attack';this.movePhase='startup';
         this.moveTimer=0;this.attackDmg=m.dmg;
@@ -562,7 +566,7 @@ function handleFightInput(){
   p1.inp.clear();
 
   // P2
-  if(mode==='2p'){
+  if(mode==='2p' || mode==='multi'){
     const d2=getDir(KEYS.p2);p2.inp.add(d2);
     if(keys[KEYS.p2.lp])p2.inp.press('LP');
     if(keys[KEYS.p2.hp])p2.inp.press('HP');
@@ -790,8 +794,26 @@ function startFight(){
   f1=new Fighter(CHAR_IDS[selP1],true);
   f2=new Fighter(CHAR_IDS[selP2],false);
   f1.reset(220,true);f2.reset(740,false);
-  hud.name[0].textContent=CHARS[CHAR_IDS[selP1]].name.toUpperCase();
-  hud.name[1].textContent=CHARS[CHAR_IDS[selP2]].name.toUpperCase();
+  
+  let p1Name = CHARS[CHAR_IDS[selP1]].name.toUpperCase();
+  let p2Name = CHARS[CHAR_IDS[selP2]].name.toUpperCase();
+  
+  if (mode === 'multi') {
+    const myName = ($('player-name-input')?.value.trim() || 'JUGADOR').toUpperCase();
+    const oppName = (opponentName || 'RIVAL').toUpperCase();
+    if (myRole === 'p1') {
+      p1Name = myName + ' (' + p1Name + ')';
+      p2Name = oppName + ' (' + p2Name + ')';
+    } else {
+      p2Name = myName + ' (' + p2Name + ')';
+      p1Name = oppName + ' (' + p1Name + ')';
+    }
+  } else if (mode === '1p') {
+    p2Name += ' (CPU)';
+  }
+  
+  hud.name[0].textContent = p1Name;
+  hud.name[1].textContent = p2Name;
   timer=99;particles=[];projectiles=[];dmgDisplay=[];
   comboCount=0;comboOwner=null;comboTimer=0;
   hitstop=0;shakeX=0;shakeY=0;roundOver=false;
@@ -859,6 +881,7 @@ function connectMultiplayer(){
     socket = io();
     socket.on('match_found', (data) => {
       myRole = data.role;
+      opponentName = data.opponentName || '';
       hide($('matchmaking-screen'));
       selP1 = 0; selP2 = 1; // Default characters for fast matchmaking
       selR1 = true; selR2 = true;
@@ -873,7 +896,7 @@ function connectMultiplayer(){
       goToMenu();
     });
   }
-  socket.emit('join_matchmaking');
+  socket.emit('join_matchmaking', { name: $('player-name-input')?.value || '' });
 }
 
 $('cancel-match-btn').onclick = () => {
@@ -970,13 +993,13 @@ function gameLoop(){
       l.state='hitstun';l.hitstun=10;l.vy=0;l.vx=0;
       stateTimer--;
       if(stateTimer<=0){roundOver=true;endRound(w===f1?1:2);}
-      if(w.state==='attack' && w.attackDmg>=50){
-        w.state='idle'; w.movePhase='none'; state='fatality'; stateTimer=180;
+      if(w.state==='attack' && w.move && w.move.fatality){
+        w.state='idle'; w.movePhase='none'; state='fatality'; stateTimer=240;
         document.body.style.backgroundColor='#200';
         l.sprite.play('dead'); w.sprite.play('attack2');
-        spawnP(l.x,l.y-100,200,'#a00',{spread:6,spark:false});
-        spawnP(l.x,l.y-50,100,'#f00',{spread:4,spark:true});
-        shakeX=25;shakeY=25;hitstop=10;
+        spawnP(l.x,l.y-100,400,'#a00',{spread:8,spark:false}); // Lluvia brutal
+        spawnP(l.x,l.y-50,200,'#f00',{spread:6,spark:true});
+        shakeX=30;shakeY=30;hitstop=10;
         msgTitle.textContent="FATALITY";msgTitle.style.color="#f00";msgTitle.style.fontSize="100px";
         msgSub.textContent=w.name.toUpperCase()+" WINS";
         show(overlay);hide($('restart-btn'));hide($('menu-btn'));
@@ -985,6 +1008,17 @@ function gameLoop(){
   }else if(state==='fatality'){
     if(hitstop>0)hitstop--;
     updP();
+    
+    // Animar al ganador normal, y al perdedor lento para una muerte cinemática
+    const w=f1.hp<=0?f2:f1;const l=f1.hp<=0?f1:f2;
+    w.sprite.update(1);
+    l.sprite.update(0.12); // Cámara lenta
+    
+    // Mover un poco hacia abajo y añadir más sangre poco a poco
+    if(stateTimer % 5 === 0) {
+      spawnP(l.x,l.y-50,15,'#800',{spread:2,spark:false, gravity: 0.1});
+    }
+
     stateTimer--;
     if(stateTimer<=0){
       document.body.style.backgroundColor='';
