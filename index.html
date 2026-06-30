@@ -18,8 +18,9 @@
   <div id="menu-screen" class="screen">
     <div id="title">MORTAL KOMBAT</div>
     <div id="subtitle">CHINO</div>
-    <div style="margin-top:20px; margin-bottom:10px;">
-      <input type="text" id="player-name-input" placeholder="INGRESA TU NOMBRE" maxlength="12" style="text-align:center; font-family:'Passion One'; font-size: 24px; background:#111; color:#ff0; border:2px solid #555; padding: 5px; outline:none; border-radius: 5px; text-transform: uppercase;" />
+    <div id="name-wrapper">
+      <div id="name-label">Tu nombre de combatiente</div>
+      <input type="text" id="player-name-input" placeholder="INGRESA TU NOMBRE" maxlength="12" autocomplete="off" />
     </div>
     <div id="menu-options">
       <div class="menu-item selected" data-action="1p">1 JUGADOR</div>
@@ -28,13 +29,21 @@
       <div class="menu-item" data-action="controls">CONTROLES</div>
     </div>
     <div id="menu-hint">FLECHAS / WASD para mover · ENTER para confirmar</div>
-    <div id="loading-text">Cargando sprites...</div>
+  </div>
+
+  <!-- UNIFIED LOADING SCREEN -->
+  <div id="loading-screen" class="screen">
+    <div id="loading-spinner"></div>
+    <h2 id="loading-msg">CARGANDO RECURSOS...</h2>
+    <div id="cancel-match-btn" class="menu-item hidden" style="margin-top: 50px;">CANCELAR</div>
   </div>
 
   <!-- MATCHMAKING SCREEN -->
-  <div id="matchmaking-screen" class="screen hidden" style="text-align: center; padding-top: 200px;">
-    <h2>BUSCANDO JUGADOR...</h2>
-    <div id="cancel-match-btn" class="menu-item" style="margin-top: 50px;">CANCELAR</div>
+  <div id="matchmaking-screen" class="screen hidden">
+    <h2 id="mm-title">BUSCANDO OPONENTE</h2>
+    <div id="mm-spinner"></div>
+    <p id="mm-hint">Esperando a que otro jugador se conecte...</p>
+    <div id="mm-cancel" class="menu-item">CANCELAR</div>
   </div>
 
   <!-- CONTROLS SCREEN -->
@@ -92,6 +101,7 @@
         <div class="p-name" id="hud-p1-name">CATRACHO</div>
         <div class="hp-bg"><div class="hp-fill" id="hud-p1-hp"></div><div class="hp-dmg" id="hud-p1-dmg"></div></div>
         <div class="meter-bg"><div class="meter-fill" id="hud-p1-meter"></div></div>
+        <div class="guard-bar" id="hud-p1-guard"><span class="guard-label">GUARD</span><div class="guard-fill" id="hud-p1-gf"></div></div>
       </div>
       <div class="mid-sec">
         <div id="hud-timer">99</div>
@@ -102,6 +112,7 @@
         <div class="p-name" id="hud-p2-name">PIJUDO</div>
         <div class="hp-bg"><div class="hp-fill" id="hud-p2-hp"></div><div class="hp-dmg" id="hud-p2-dmg"></div></div>
         <div class="meter-bg"><div class="meter-fill" id="hud-p2-meter"></div></div>
+        <div class="guard-bar right" id="hud-p2-guard"><span class="guard-label">GUARD</span><div class="guard-fill" id="hud-p2-gf"></div></div>
       </div>
     </div>
   </div>
