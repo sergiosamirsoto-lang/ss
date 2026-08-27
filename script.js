@@ -1013,7 +1013,9 @@ function endRound(winner){
 function goToMenu(){
   if(mode==='multi'&&socket){socket.emit('leave_matchmaking');socket.disconnect();socket=null;}
   for(const k in keys)keys[k]=false;
-  hide(overlay);hide($('game-hud'));canvas.classList.remove('visible');
+  remoteKeys={};myRole=null;opponentName='';isMultiplayer=false;
+  hide(overlay);hide($('game-hud'));hide($('loading-screen'));hide($('matchmaking-screen'));hide($('cancel-match-btn'));
+  canvas.classList.remove('visible');
   hide($('select-screen'));hide($('controls-screen'));show($('menu-screen'));
   state='menu';p1Wins=0;p2Wins=0;round=1;
 }
@@ -1093,11 +1095,7 @@ function connectMultiplayer(){
     });
     socket.on('opponent_disconnected', () => {
       alert("El oponente se ha desconectado.");
-      remoteKeys={};myRole=null;isMultiplayer=false;
-      if(socket){socket.disconnect();socket=null;}
-      hide($('cancel-match-btn'));
-      hide($('loading-screen'));
-      show($('menu-screen'));
+      goToMenu();
     });
   }
   const nameInput = $('player-name-input');
@@ -1105,9 +1103,7 @@ function connectMultiplayer(){
 }
 
 $('cancel-match-btn').onclick = () => {
-  if(socket){socket.emit('leave_matchmaking');socket.disconnect();socket=null;}
-  remoteKeys={};myRole=null;isMultiplayer=false;
-  hide($('loading-screen')); hide($('matchmaking-screen')); show($('menu-screen'));
+  goToMenu();
 };
 
 var mmCancel = $('mm-cancel');
