@@ -20,6 +20,30 @@ let isMultiplayer = false;
 let myRole = null;
 let opponentName = '';
 let remoteKeys = {}; // Teclas del rival en multijugador (llegan por WebSocket)
+let multiplayerSyncFrame = 0;
+
+const FIGHTER_SYNC_FIELDS = ['facing','x','y','vx','vy','onGround','hp','meter','state','moveTimer','movePhase','blocking','crouching','hitstun','canCancel','invuln','airMoves','breath','comboCount','comboTimer','chargeDir','chargeTimer','attackDmg','attackName','attackCooldown','blocksRemaining','knockedTimer','knockInvuln'];
+
+function fighterSnapshot(f) {
+  return FIGHTER_SYNC_FIELDS.reduce((snapshot, key) => (snapshot[key] = f[key], snapshot), {});
+}
+
+function applyFighterSnapshot(f, snapshot) {
+  if (!f || !snapshot) return;
+  FIGHTER_SYNC_FIELDS.forEach(key => {
+    if (Object.prototype.hasOwnProperty.call(snapshot, key)) f[key] = snapshot[key];
+  });
+  f.sprite.play(f.getAnimState());
+  f.sprite.update(1);
+}
+
+function emitMultiplayerState() {
+  if (mode !== 'multi' || myRole !== 'p1' || !socket || !f1 || !f2) return;
+  // 20 snapshots/second keeps remote play responsive without flooding the server.
+  if (++multiplayerSyncFrame % 3) return;
+  socket.emit('game_state', { f1: fighterSnapshot(f1), f2: fighterSnapshot(f2), state, stateTimer, timer, round, p1Wins, p2Wins, roundOver,
+    message: { visible: !overlay.classList.contains('hidden'), title: msgTitle.textContent, subtitle: msgSub.textContent } });
+}
 // Sound System
 const SND = {
   ctx: null, init(){try{this.ctx=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}},
@@ -964,6 +988,7 @@ function startFight(){
   timer=99;particles=[];projectiles=[];dmgDisplay=[];
   comboCount=0;comboOwner=null;comboTimer=0;
   hitstop=0;shakeX=0;shakeY=0;roundOver=false;
+  remoteKeys={};multiplayerSyncFrame=0;
   state='countdown';stateTimer=105;
   hideMsg();hide($('select-screen'));
   show($('game-hud'));canvas.classList.add('visible');
@@ -986,6 +1011,7 @@ function endRound(winner){
 }
 
 function goToMenu(){
+  if(mode==='multi'&&socket){socket.emit('leave_matchmaking');socket.disconnect();socket=null;}
   for(const k in keys)keys[k]=false;
   hide(overlay);hide($('game-hud'));canvas.classList.remove('visible');
   hide($('select-screen'));hide($('controls-screen'));show($('menu-screen'));
@@ -1045,10 +1071,30 @@ function connectMultiplayer(){
     });
     socket.on('game_input', (data) => {
       // Las teclas del rival se guardan en remoteKeys, NO en keys locales
-      remoteKeys[data.key] = data.state;
+      if(data && typeof data.key === 'string' && typeof data.state === 'boolean') remoteKeys[data.key] = data.state;
+    });
+    socket.on('game_state', (data) => {
+      if(myRole!=='p2' || !data || !f1 || !f2) return;
+      applyFighterSnapshot(f1, data.f1);
+      applyFighterSnapshot(f2, data.f2);
+      if(typeof data.state==='string') state=data.state;
+      if(typeof data.stateTimer==='number') stateTimer=data.stateTimer;
+      if(typeof data.timer==='number') timer=data.timer;
+      if(typeof data.round==='number') round=data.round;
+      if(typeof data.p1Wins==='number') p1Wins=data.p1Wins;
+      if(typeof data.p2Wins==='number') p2Wins=data.p2Wins;
+      if(typeof data.roundOver==='boolean') roundOver=data.roundOver;
+      if(data.message){
+        msgTitle.textContent=data.message.title||'';
+        msgSub.textContent=data.message.subtitle||'';
+        data.message.visible?show(overlay):hide(overlay);
+      }
+      updateUI();
     });
     socket.on('opponent_disconnected', () => {
       alert("El oponente se ha desconectado.");
+      remoteKeys={};myRole=null;isMultiplayer=false;
+      if(socket){socket.disconnect();socket=null;}
       hide($('cancel-match-btn'));
       hide($('loading-screen'));
       show($('menu-screen'));
@@ -1059,7 +1105,8 @@ function connectMultiplayer(){
 }
 
 $('cancel-match-btn').onclick = () => {
-  if(socket){socket.disconnect();socket=null;}
+  if(socket){socket.emit('leave_matchmaking');socket.disconnect();socket=null;}
+  remoteKeys={};myRole=null;isMultiplayer=false;
   hide($('loading-screen')); hide($('matchmaking-screen')); show($('menu-screen'));
 };
 
@@ -1138,10 +1185,10 @@ function gameLoop(){
   if(state==='menu')handleMenu();
   else if(state==='controls')handleControls();
   else if(state==='select')handleSelect();
-  else if(state==='countdown'){
+  else if(state==='countdown' && !(mode==='multi'&&myRole==='p2')){
     f1.update();f2.update();pushApart();updProj();updP();
     stateTimer--;if(stateTimer<=0)state='fighting';
-  }else if(state==='fighting'){
+  }else if(state==='fighting' && !(mode==='multi'&&myRole==='p2')){
     if(hitstop>0)hitstop--;
     else{handleFightInput();f1.update();f2.update();pushApart();checkHits();
       updProj();updP();timer-=1/60;if(timer<0)timer=0;updateUI();
@@ -1159,7 +1206,7 @@ function gameLoop(){
         else endRound(0);
       }
     }
-  }else if(state==='finish_him'){
+  }else if(state==='finish_him' && !(mode==='multi'&&myRole==='p2')){
     if(hitstop>0)hitstop--;
     else {
       handleFightInput();f1.update();f2.update();pushApart();updProj();updP();
@@ -1180,7 +1227,7 @@ function gameLoop(){
         show(overlay);hide($('restart-btn'));hide($('menu-btn'));
       }
     }
-  }else if(state==='fatality'){
+  }else if(state==='fatality' && !(mode==='multi'&&myRole==='p2')){
     if(hitstop>0)hitstop--;
     updP();
     
@@ -1202,6 +1249,8 @@ function gameLoop(){
       roundOver=true;endRound(f1.hp<=0?2:1);
     }
   }
+
+  emitMultiplayerState();
 
   // Render fight
   if(state==='fighting'||state==='countdown'||state==='roundend'||state==='gameover'||state==='finish_him'||state==='fatality'){
@@ -1263,6 +1312,16 @@ window.addEventListener('keyup',e=>{
     if(e.code.startsWith('Numpad'))keys[e.code.replace('Numpad','')]=false;
   }
   e.preventDefault();
+});
+window.addEventListener('blur',()=>{
+  if(mode!=='multi'||!myRole) return;
+  const myK=myRole==='p1'?KEYS.p1:KEYS.p2;
+  Object.values(myK).forEach(key=>{
+    if(keys[key]){
+      keys[key]=false;
+      if(socket)socket.emit('game_input',{key,state:false});
+    }
+  });
 });
 rstBtn.addEventListener('click',()=>{
   if(state==='gameover'){p1Wins=0;p2Wins=0;round=1;startFight()}
